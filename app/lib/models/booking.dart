@@ -27,4 +27,15 @@ class Booking {
       venue: json['venue'] != null ? Venue.fromJson(json['venue']) : null,
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'venue_id': venueId,
+      'date': date,
+      'start_time': startTime,
+      'user_id': userId,
+      'venue': venue?.toJson(),
+    };
+  }
 }

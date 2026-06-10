@@ -1,5 +1,5 @@
 class Venue {
-  final int? id;
+  final int id;
   final String name;
   final String imageUrl;
   final String? sport;
@@ -21,5 +21,15 @@ class Venue {
       sport: json['sport'],
       location: json['location'],
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      '_id': id,
+      'name': name,
+      'image_url': imageUrl,
+      'sport': sport,
+      'location': location,
+    };
   }
 }

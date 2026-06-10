@@ -1,5 +1,7 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/slot.dart';
 import '../models/booking.dart';
 import '../services/api_service.dart';
@@ -49,14 +51,14 @@ class BookingProvider with ChangeNotifier {
     }
   }
 
-  Future<void> fetchSlots(int venueId, DateTime date) async {
+  Future<void> fetchSlots(int venueId, DateTime date, [String? timeOfDay]) async {
     _isLoadingSlots = true;
     _error = null;
     _currentVenueId = venueId;
     _currentDateStr = DateFormat('yyyy-MM-dd').format(date);
     notifyListeners();
     try {
-      _slots = await _apiService.getSlots(venueId, _currentDateStr!);
+      _slots = await _apiService.getSlots(venueId, _currentDateStr!, timeOfDay);
     } catch (e) {
       _error = e.toString();
     } finally {
@@ -72,10 +74,11 @@ class BookingProvider with ChangeNotifier {
       await _apiService.bookSlot(userId, venueId, dateStr, startTime);
       await fetchSlots(venueId, date);
     } on ApiException catch (e) {
-      _error = e.message;
       await fetchSlots(venueId, date);
+      _error = e.message;
       rethrow;
     } catch (e) {
+      await fetchSlots(venueId, date);
       _error = e.toString();
       rethrow;
     }
@@ -84,8 +87,29 @@ class BookingProvider with ChangeNotifier {
   Future<void> fetchMyBookings(String userId) async {
     _isLoadingBookings = true;
     notifyListeners();
+
+    // Try cache first
+    final prefs = await SharedPreferences.getInstance();
+    final cachedData = prefs.getString('my_bookings_$userId');
+    if (cachedData != null) {
+      try {
+        final List data = jsonDecode(cachedData);
+        _myBookings = data.map((b) => Booking.fromJson(b)).toList();
+        _isLoadingBookings = false;
+        notifyListeners();
+      } catch (e) {}
+    }
+
     try {
-      _myBookings = await _apiService.getUserBookings(userId);
+      final freshBookings = await _apiService.getUserBookings(userId);
+      _myBookings = freshBookings;
+      
+      final jsonList = freshBookings.map((b) => b.toJson()).toList();
+      await prefs.setString('my_bookings_$userId', jsonEncode(jsonList));
+    } catch (e) {
+      if (cachedData == null) {
+        _error = e.toString();
+      }
     } finally {
       _isLoadingBookings = false;
       notifyListeners();

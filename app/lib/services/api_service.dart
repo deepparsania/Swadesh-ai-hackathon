@@ -15,8 +15,8 @@ class ApiException implements Exception {
 }
 
 class ApiService {
-  static const String baseUrl = 'http://192.168.106.208:3000';
-  static const String wsUrl = 'ws://192.168.106.208:3000';
+  static const String baseUrl = 'https://swadesh-ai-hackathon.onrender.com';
+  static const String wsUrl = 'wss://swadesh-ai-hackathon.onrender.com';
 
   final List<User> _users = [
     User(id: 'user_1', name: 'User 1'),
@@ -60,6 +60,7 @@ class ApiService {
 
       if (response.statusCode == 200) {
         final List data = jsonDecode(response.body);
+        print(data);
         return data.map((v) => Venue.fromJson(v)).toList();
       } else {
         throw ApiException('Failed to load venues');
@@ -72,9 +73,13 @@ class ApiService {
     }
   }
 
-  Future<List<Slot>> getSlots(int venueId, String date) async {
+  Future<List<Slot>> getSlots(int venueId, String date, [String? timeOfDay]) async {
     try {
-      final response = await http.get(Uri.parse('$baseUrl/venues/$venueId/slots?date=$date'));
+      String url = '$baseUrl/venues/$venueId/slots?date=$date';
+      if (timeOfDay != null) {
+        url += '&timeOfDay=$timeOfDay';
+      }
+      final response = await http.get(Uri.parse(url));
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         final List slots = data['slots'];

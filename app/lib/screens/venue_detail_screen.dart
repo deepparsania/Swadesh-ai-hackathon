@@ -16,17 +16,18 @@ class VenueDetailScreen extends StatefulWidget {
 
 class _VenueDetailScreenState extends State<VenueDetailScreen> {
   DateTime _selectedDate = DateTime.now();
+  String? _selectedTimeOfDay;
 
   @override
   void initState() {
     super.initState();
-    _fetchSlotsForDate(_selectedDate);
+    _fetchSlotsForDate(_selectedDate, _selectedTimeOfDay);
   }
 
-  void _fetchSlotsForDate(DateTime date) {
+  void _fetchSlotsForDate(DateTime date, String? timeOfDay) {
     Future.microtask(() =>
         Provider.of<BookingProvider>(context, listen: false)
-            .fetchSlots(widget.venue.id??0, date));
+            .fetchSlots(widget.venue.id, date, timeOfDay));
   }
 
   void _bookSlot(Slot slot) async {
@@ -44,7 +45,7 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
 
       await bookingProvider.bookSlot(
         userProvider.currentUser!.id,
-        widget.venue!.id??0,
+        widget.venue.id,
         _selectedDate,
         slot.startTime,
       );
@@ -107,7 +108,7 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
                     setState(() {
                       _selectedDate = date;
                     });
-                    _fetchSlotsForDate(date);
+                    _fetchSlotsForDate(date, _selectedTimeOfDay);
                   },
                   child: Container(
                     width: 70,
@@ -126,6 +127,52 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
                   ),
                 );
               },
+            ),
+          ),
+          const Divider(),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: Row(
+              children: [
+                FilterChip(
+                  label: const Text('All'),
+                  selected: _selectedTimeOfDay == null,
+                  onSelected: (selected) {
+                    if (selected) {
+                      setState(() => _selectedTimeOfDay = null);
+                      _fetchSlotsForDate(_selectedDate, null);
+                    }
+                  },
+                ),
+                const SizedBox(width: 8),
+                FilterChip(
+                  label: const Text('Morning'),
+                  selected: _selectedTimeOfDay == 'morning',
+                  onSelected: (selected) {
+                    setState(() => _selectedTimeOfDay = selected ? 'morning' : null);
+                    _fetchSlotsForDate(_selectedDate, _selectedTimeOfDay);
+                  },
+                ),
+                const SizedBox(width: 8),
+                FilterChip(
+                  label: const Text('Afternoon'),
+                  selected: _selectedTimeOfDay == 'afternoon',
+                  onSelected: (selected) {
+                    setState(() => _selectedTimeOfDay = selected ? 'afternoon' : null);
+                    _fetchSlotsForDate(_selectedDate, _selectedTimeOfDay);
+                  },
+                ),
+                const SizedBox(width: 8),
+                FilterChip(
+                  label: const Text('Evening'),
+                  selected: _selectedTimeOfDay == 'evening',
+                  onSelected: (selected) {
+                    setState(() => _selectedTimeOfDay = selected ? 'evening' : null);
+                    _fetchSlotsForDate(_selectedDate, _selectedTimeOfDay);
+                  },
+                ),
+              ],
             ),
           ),
           const Divider(),
