@@ -1,53 +1,160 @@
 # QuickSlot 🏸⚽️
 
-QuickSlot is a real-time sports venue booking application that guarantees concurrency safety—so no slot is ever double-booked!
+QuickSlot is a real-time sports venue booking application that guarantees concurrency safety, ensuring that no slot is ever double-booked even when multiple users attempt to book the same slot simultaneously.
 
-## 🚀 Setup Steps
+## 🔗 Links
 
-### Prerequisites
-- Node.js (v18+)
-- MongoDB (running locally on port 27017 or provide a `MONGO_URI` in `.env`)
-- Flutter SDK (v3.19+)
+**Live Backend:** https://swadesh-ai-hackathon.onrender.com
 
-### 1. Backend Setup
+**APK Download:** https://drive.google.com/file/d/1QZDLQWCgukIyqJi1sp1C1SHhY7-fjHlR/view?usp=sharing
+
+**Demo Video:** https://drive.google.com/file/d/1A9-ptgEnpTFvTuRCG0CPhbdZu5MJ6MjB/view?usp=sharing
+
+---
+
+# 🚀 Setup Steps
+
+## Prerequisites
+
+* Node.js v18+
+* MongoDB
+* Flutter SDK v3.19+
+
+## Backend
+
 ```bash
 cd server
 npm install
-# Ensure MongoDB is running locally
 npm start
 ```
-*The server will start on `http://localhost:3000` and seed 4 default venues into the database automatically.*
 
-### 2. Flutter App Setup
+The backend runs on:
+
+```text
+http://localhost:3000
+```
+
+## Flutter App
+
 ```bash
 cd app
 flutter pub get
 flutter run
 ```
-*The app is configured to point to `localhost:3000` for both REST and WebSockets. Run it on two different simulators to see real-time booking updates!*
 
-## 🏗 Architecture Note
+Run the app on multiple simulators/devices to observe real-time slot synchronization.
 
-QuickSlot utilizes a decoupled client-server architecture. The backend is a lightweight Node.js/Express server backed by MongoDB, using a compound unique index to guarantee absolute concurrency safety at the database level. For real-time functionality, the server maintains a WebSocket connection with the clients. 
+---
 
-The Flutter frontend uses the `Provider` pattern for state management. When a user books a slot via the REST API, the backend broadcasts a WebSocket event (`slot_status_changed`) to all connected clients, allowing the Flutter app to instantly update the UI grid without requiring a heavy re-fetch of the endpoint.
+# 📡 API & WebSocket Endpoints
+
+### Base URLs
+* **REST API:** `https://swadesh-ai-hackathon.onrender.com` (or `http://localhost:3000`)
+* **WebSocket:** `wss://swadesh-ai-hackathon.onrender.com` (or `ws://localhost:3000`)
+
+### Authentication
+Lightweight header-based authentication is used for protected routes. Send the `X-User-Id` header (e.g., `user_1`, `user_2`).
+
+### REST Endpoints
+
+1. **List Venues**
+   * **GET** `/venues`
+   * Returns a list of all available sports venues.
+2. **Get Venue Slots**
+   * **GET** `/venues/{id}/slots?date=YYYY-MM-DD`
+   * **Query Params:** `date` (required), `timeOfDay` (optional: `morning`, `afternoon`, `evening`)
+   * Returns the hourly slots for the venue on the specified date.
+3. **Book a Slot**
+   * **POST** `/bookings`
+   * **Headers:** `X-User-Id`
+   * **Body:** `{ "venue_id": 1, "date": "2026-06-12", "start_time": "09:00" }`
+   * Returns 201 on success, or 409 Conflict if the slot is already booked.
+4. **Get User Bookings**
+   * **GET** `/users/{id}/bookings`
+   * Returns a list of upcoming bookings for the specified user.
+5. **Cancel Booking**
+   * **DELETE** `/bookings/{id}`
+   * **Headers:** `X-User-Id`
+   * Cancels a specific booking.
+
+### WebSocket Events
+
+The server maintains a persistent WebSocket connection. When any user successfully books or cancels a slot, the server broadcasts the following event to all connected clients:
+
+```json
+{
+  "event": "slot_status_changed",
+  "venue_id": 1,
+  "date": "2026-06-12",
+  "start_time": "09:00",
+  "status": "booked",
+  "booking_id": "booking_123",
+  "user_id": "user_1"
+}
+```
+
+---
+
+# 🏗 Architecture Note
+
+QuickSlot uses a client-server architecture with a Flutter frontend and a Node.js/Express backend backed by MongoDB. Concurrency safety is enforced at the database level using a compound unique index that prevents duplicate bookings for the same venue and time slot. Real-time updates are delivered through WebSockets; when a booking is created, the server broadcasts a slot update event to all connected clients, allowing every device to immediately reflect the latest slot status without refreshing. The Flutter app uses Provider for state management and SharedPreferences for offline booking cache support.
+
+### Architecture Sketch
 
 ![Architecture Sketch](/Users/deepparsania/.gemini/antigravity/brain/2dd20fa0-5411-4d4d-af41-84a31321d9e7/architecture_sketch_1781112180688.png)
 
-## ✂️ What I Cut & Why
+---
 
-1. **Full Authentication (JWT/OAuth):** We cut a robust login system in favor of a lightweight `X-User-Id` header. Building auth flows, token refresh logic, and user registration would burn precious hackathon time without demonstrating the core technical challenge (concurrency and real-time updates).
-2. **Dynamic Slot Generation Engine:** Instead of building a complex admin panel to define custom operating hours for each venue, we seeded standard 6 AM - 10 PM hourly slots. This kept the database schema simpler and allowed us to focus directly on the booking UI.
+# ⭐ Bonus Features Implemented
 
-## ⏳ What I'd Do With One More Day
+* Real-time slot status updates via WebSockets
+* Offline read cache for My Bookings using SharedPreferences
+* Slot filtering by time of day
+* Automated tests (unit/widget tests)
+* Multi-device live synchronization
 
-- **Robust WebSocket Reconnection:** I would implement an exponential backoff reconnection strategy for the WebSockets in Flutter, along with an "offline" UI banner.
-- **Payment Gateway Integration:** Integrate Stripe to actually charge users before locking the slot.
-- **Admin Dashboard:** A simple web portal for venue owners to view bookings, cancel them, and block out maintenance times.
+---
 
-## 🤖 AI Usage Note
+# ✂️ What I Cut & Why
 
-**How AI was used:** AI (specifically the agentic coding assistant) was used to rapidly scaffold the Flutter UI, generate the initial mock API service, write the Express boilerplate, and handle the repetitive task of mapping the JSON models into Dart classes. It was also used to generate the whiteboard architecture sketch above!
+### Authentication System
 
-**What it got wrong & how I fixed it:** 
-When asked to configure the backend for Vercel deployment, the AI confidently generated a `vercel.json` config that included an environment variable reference to a Vercel Secret (`"MONGO_URI": "@quickslot-mongo-uri"`). This caused an immediate deployment failure because that secret had not been created via the Vercel CLI. I caught the error from the deployment logs, stripped the invalid `"env"` block from the config file, and correctly set the variable in the Vercel dashboard UI instead.
+I intentionally avoided implementing a complete authentication solution (JWT, OAuth, registration, password recovery, etc.) and instead used a lightweight user identifier approach. This allowed me to focus on solving the core challenge of concurrency-safe booking and real-time synchronization within the hackathon timeframe.
+
+### Venue Management Dashboard
+
+A full admin dashboard for venue owners was excluded. While valuable, it would have required significant additional work around role management, venue configuration, and reporting, which was outside the primary scope of demonstrating booking reliability.
+
+---
+
+# ⏳ What I'd Do With One More Day
+
+### Better Offline Experience
+
+* Queue booking attempts while offline
+* Automatic retry when connectivity returns
+* Offline status indicators
+
+### Robust WebSocket Reconnection
+
+* Exponential backoff reconnect strategy
+* Connection health monitoring
+* User-facing connection status banner
+
+### Payments & Admin Tools
+
+* Stripe/Razorpay integration
+* Venue owner dashboard
+* Booking analytics and utilization reports
+
+---
+
+# 🤖 AI Usage Note
+
+### How AI Was Used
+
+AI was used to accelerate development by helping generate Flutter UI scaffolding, Express server boilerplate, model classes, API integration code, test skeletons, and project documentation. It was also used to create the architecture sketch and speed up repetitive coding tasks.
+
+### One Thing AI Got Wrong
+
+While working on deployment, the AI generated an incorrect deployment configuration that referenced an environment variable that had not been properly configured. The deployment failed during testing. After reviewing the deployment logs, I identified the issue, corrected the configuration manually, and redeployed successfully. This highlighted the importance of validating AI-generated solutions rather than accepting them blindly.
