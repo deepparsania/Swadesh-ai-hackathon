@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/cupertino.dart';
 import 'package:http/http.dart' as http;
 import 'package:web_socket_channel/web_socket_channel.dart';
 import '../models/user.dart';
@@ -53,8 +54,10 @@ class ApiService {
   }
 
   Future<List<Venue>> getVenues() async {
+
     try {
       final response = await http.get(Uri.parse('$baseUrl/venues'));
+
       if (response.statusCode == 200) {
         final List data = jsonDecode(response.body);
         return data.map((v) => Venue.fromJson(v)).toList();
@@ -62,6 +65,8 @@ class ApiService {
         throw ApiException('Failed to load venues');
       }
     } catch (e) {
+      debugPrint(e.toString());
+
       // Return empty list if backend is not running yet
       return [];
     }

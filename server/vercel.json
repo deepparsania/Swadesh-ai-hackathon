@@ -11,8 +11,5 @@
       "source": "/(.*)",
       "destination": "/api/index.js"
     }
-  ],
-  "env": {
-    "MONGO_URI": "@quickslot-mongo-uri"
-  }
+  ]
 }
