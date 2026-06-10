@@ -1,5 +1,5 @@
 class Venue {
-  final int id;
+  final dynamic id;
   final String name;
   final String imageUrl;
   final String? sport;

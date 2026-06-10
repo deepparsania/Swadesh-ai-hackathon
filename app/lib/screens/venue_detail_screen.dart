@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../models/venue.dart';
 import '../models/slot.dart';
 import '../providers/booking_provider.dart';
@@ -53,38 +54,102 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
       if (mounted) {
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Slot booked successfully!'), backgroundColor: Colors.green),
+          SnackBar(
+            content: Text('Slot booked successfully!', style: GoogleFonts.inter()),
+            backgroundColor: Theme.of(context).colorScheme.secondary,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          ),
         );
       }
     } catch (e) {
       if (mounted) {
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString()), backgroundColor: Colors.red),
+          SnackBar(
+            content: Text(e.toString(), style: GoogleFonts.inter()),
+            backgroundColor: Colors.redAccent,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          ),
         );
       }
     }
   }
 
   void _confirmBooking(Slot slot) {
-    showDialog(
+    showModalBottomSheet(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Confirm Booking'),
-        content: Text('Book slot at ${slot.startTime}?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _bookSlot(slot);
-            },
-            child: const Text('Book'),
-          ),
-        ],
+      backgroundColor: const Color(0xFF1E293B),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) => Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.white24,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              'Confirm Booking',
+              style: GoogleFonts.outfit(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Do you want to book the slot at ${slot.startTime} on ${DateFormat.MMMd().format(_selectedDate)}?',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.inter(
+                fontSize: 16,
+                color: Colors.white70,
+              ),
+            ),
+            const SizedBox(height: 32),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => Navigator.pop(context),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.white,
+                      side: const BorderSide(color: Colors.white24),
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    child: const Text('Cancel'),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+                      _bookSlot(slot);
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Theme.of(context).primaryColor,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    child: const Text('Confirm', style: TextStyle(fontWeight: FontWeight.bold)),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+          ],
+        ),
       ),
     );
   }
@@ -92,127 +157,192 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(widget.venue.name)),
-      body: Column(
-        children: [
-          SizedBox(
-            height: 80,
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              itemCount: 7,
-              itemBuilder: (context, index) {
-                final date = DateTime.now().add(Duration(days: index));
-                final isSelected = date.day == _selectedDate.day && date.month == _selectedDate.month;
-                return GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      _selectedDate = date;
-                    });
-                    _fetchSlotsForDate(date, _selectedTimeOfDay);
-                  },
-                  child: Container(
-                    width: 70,
-                    margin: const EdgeInsets.all(8),
+      body: CustomScrollView(
+        slivers: [
+          SliverAppBar(
+            expandedHeight: 250,
+            pinned: true,
+            flexibleSpace: FlexibleSpaceBar(
+              title: Text(widget.venue.name, style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+              background: Stack(
+                fit: StackFit.expand,
+                children: [
+                  Image.network(widget.venue.imageUrl, fit: BoxFit.cover),
+                  Container(
                     decoration: BoxDecoration(
-                      color: isSelected ? Colors.blue : Colors.grey[200],
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(DateFormat.E().format(date), style: TextStyle(color: isSelected ? Colors.white : Colors.black)),
-                        Text(date.day.toString(), style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: isSelected ? Colors.white : Colors.black)),
-                      ],
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [Colors.transparent, const Color(0xFF0F172A).withOpacity(0.9)],
+                      ),
                     ),
                   ),
-                );
-              },
+                ],
+              ),
             ),
           ),
-          const Divider(),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 8),
-            child: Row(
+          SliverToBoxAdapter(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                FilterChip(
-                  label: const Text('All'),
-                  selected: _selectedTimeOfDay == null,
-                  onSelected: (selected) {
-                    if (selected) {
-                      setState(() => _selectedTimeOfDay = null);
-                      _fetchSlotsForDate(_selectedDate, null);
-                    }
-                  },
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.location_on, color: Colors.white54, size: 18),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          widget.venue.location ?? 'Location unknown',
+                          style: GoogleFonts.inter(color: Colors.white70, fontSize: 16),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-                const SizedBox(width: 8),
-                FilterChip(
-                  label: const Text('Morning'),
-                  selected: _selectedTimeOfDay == 'morning',
-                  onSelected: (selected) {
-                    setState(() => _selectedTimeOfDay = selected ? 'morning' : null);
-                    _fetchSlotsForDate(_selectedDate, _selectedTimeOfDay);
-                  },
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                  child: Text('Select Date', style: GoogleFonts.outfit(fontSize: 20, fontWeight: FontWeight.bold)),
                 ),
-                const SizedBox(width: 8),
-                FilterChip(
-                  label: const Text('Afternoon'),
-                  selected: _selectedTimeOfDay == 'afternoon',
-                  onSelected: (selected) {
-                    setState(() => _selectedTimeOfDay = selected ? 'afternoon' : null);
-                    _fetchSlotsForDate(_selectedDate, _selectedTimeOfDay);
-                  },
+                SizedBox(
+                  height: 90,
+                  child: ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    itemCount: 14,
+                    itemBuilder: (context, index) {
+                      final date = DateTime.now().add(Duration(days: index));
+                      final isSelected = date.day == _selectedDate.day && date.month == _selectedDate.month;
+                      return GestureDetector(
+                        onTap: () {
+                          setState(() => _selectedDate = date);
+                          _fetchSlotsForDate(date, _selectedTimeOfDay);
+                        },
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 300),
+                          width: 70,
+                          margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                          decoration: BoxDecoration(
+                            gradient: isSelected
+                                ? LinearGradient(colors: [Theme.of(context).primaryColor, const Color(0xFF2563EB)])
+                                : null,
+                            color: isSelected ? null : const Color(0xFF1E293B),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: isSelected ? Colors.transparent : Colors.white12),
+                            boxShadow: isSelected
+                                ? [BoxShadow(color: Theme.of(context).primaryColor.withOpacity(0.4), blurRadius: 8, offset: const Offset(0, 4))]
+                                : [],
+                          ),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(DateFormat.E().format(date).toUpperCase(), style: GoogleFonts.inter(color: isSelected ? Colors.white : Colors.white54, fontSize: 12, fontWeight: FontWeight.bold)),
+                              const SizedBox(height: 4),
+                              Text(date.day.toString(), style: GoogleFonts.outfit(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white)),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
                 ),
-                const SizedBox(width: 8),
-                FilterChip(
-                  label: const Text('Evening'),
-                  selected: _selectedTimeOfDay == 'evening',
-                  onSelected: (selected) {
-                    setState(() => _selectedTimeOfDay = selected ? 'evening' : null);
-                    _fetchSlotsForDate(_selectedDate, _selectedTimeOfDay);
-                  },
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
+                  child: Text('Filter Time', style: GoogleFonts.outfit(fontSize: 20, fontWeight: FontWeight.bold)),
                 ),
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  child: Row(
+                    children: [
+                      _buildFilterChip('All', null),
+                      _buildFilterChip('Morning', 'morning'),
+                      _buildFilterChip('Afternoon', 'afternoon'),
+                      _buildFilterChip('Evening', 'evening'),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
               ],
             ),
           ),
-          const Divider(),
-          Expanded(
-            child: Consumer<BookingProvider>(
-              builder: (context, bookingProvider, child) {
-                if (bookingProvider.isLoadingSlots) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-                if (bookingProvider.slots.isEmpty) {
-                  return const Center(child: Text('No slots available for this date.'));
-                }
-                return GridView.builder(
-                  padding: const EdgeInsets.all(8),
+          Consumer<BookingProvider>(
+            builder: (context, bookingProvider, child) {
+              if (bookingProvider.isLoadingSlots) {
+                return const SliverFillRemaining(
+                  child: Center(child: CircularProgressIndicator()),
+                );
+              }
+              if (bookingProvider.slots.isEmpty) {
+                return SliverFillRemaining(
+                  child: Center(child: Text('No slots available.', style: GoogleFonts.inter(color: Colors.white54))),
+                );
+              }
+              return SliverPadding(
+                padding: const EdgeInsets.all(16),
+                sliver: SliverGrid(
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 3,
-                    childAspectRatio: 2.5,
-                    crossAxisSpacing: 10,
-                    mainAxisSpacing: 10,
+                    childAspectRatio: 2.2,
+                    crossAxisSpacing: 12,
+                    mainAxisSpacing: 12,
                   ),
-                  itemCount: bookingProvider.slots.length,
-                  itemBuilder: (context, index) {
-                    final slot = bookingProvider.slots[index];
-                    final isBooked = slot.status == 'booked';
-                    return ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: isBooked ? Colors.grey : Colors.green,
-                      ),
-                      onPressed: isBooked ? null : () => _confirmBooking(slot),
-                      child: Text(
-                        slot.startTime,
-                        style: const TextStyle(color: Colors.white),
-                      ),
-                    );
-                  },
-                );
-              },
-            ),
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) {
+                      final slot = bookingProvider.slots[index];
+                      final isBooked = slot.status == 'booked';
+                      return InkWell(
+                        onTap: isBooked ? null : () => _confirmBooking(slot),
+                        borderRadius: BorderRadius.circular(12),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 300),
+                          decoration: BoxDecoration(
+                            color: isBooked ? const Color(0xFF1E293B) : Theme.of(context).colorScheme.secondary.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: isBooked ? Colors.white12 : Theme.of(context).colorScheme.secondary.withOpacity(0.5),
+                            ),
+                          ),
+                          alignment: Alignment.center,
+                          child: Text(
+                            slot.startTime,
+                            style: GoogleFonts.inter(
+                              color: isBooked ? Colors.white38 : Theme.of(context).colorScheme.secondary,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                              decoration: isBooked ? TextDecoration.lineThrough : null,
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                    childCount: bookingProvider.slots.length,
+                  ),
+                ),
+              );
+            },
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildFilterChip(String label, String? value) {
+    final isSelected = _selectedTimeOfDay == value;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4.0),
+      child: FilterChip(
+        label: Text(label, style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
+        selected: isSelected,
+        selectedColor: Theme.of(context).primaryColor,
+        checkmarkColor: Colors.white,
+        backgroundColor: const Color(0xFF1E293B),
+        labelStyle: TextStyle(color: isSelected ? Colors.white : Colors.white70),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: BorderSide(color: isSelected ? Colors.transparent : Colors.white12)),
+        onSelected: (selected) {
+          setState(() => _selectedTimeOfDay = selected ? value : null);
+          _fetchSlotsForDate(_selectedDate, _selectedTimeOfDay);
+        },
       ),
     );
   }
