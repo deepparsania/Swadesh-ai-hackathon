@@ -3,7 +3,7 @@ import '../models/venue.dart';
 import '../services/api_service.dart';
 
 class VenueProvider with ChangeNotifier {
-  final MockApiService _apiService;
+  final ApiService _apiService;
   List<Venue> _venues = [];
   bool _isLoading = false;
 

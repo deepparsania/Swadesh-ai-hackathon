@@ -3,7 +3,7 @@ import '../models/user.dart';
 import '../services/api_service.dart';
 
 class UserProvider with ChangeNotifier {
-  final MockApiService _apiService;
+  final ApiService _apiService;
   User? _currentUser;
   List<User> _users = [];
   bool _isLoading = false;

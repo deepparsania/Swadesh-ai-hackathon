@@ -1,5 +1,6 @@
-import 'dart:math';
-
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:web_socket_channel/web_socket_channel.dart';
 import '../models/user.dart';
 import '../models/venue.dart';
 import '../models/slot.dart';
@@ -12,115 +13,124 @@ class ApiException implements Exception {
   String toString() => message;
 }
 
-class MockApiService {
-  // Hardcoded users
+class ApiService {
+  static const String baseUrl = 'http://localhost:3000';
+  static const String wsUrl = 'ws://localhost:3000';
+
   final List<User> _users = [
-    User(id: 'u1', name: 'Alice'),
-    User(id: 'u2', name: 'Bob'),
+    User(id: 'user_1', name: 'User 1'),
+    User(id: 'user_2', name: 'User 2'),
+    User(id: 'user_3', name: 'User 3'),
   ];
 
-  final List<Venue> _venues = [
-    Venue(id: 'v1', name: 'Downtown Badminton', imageUrl: 'https://dummyimage.com/150/0000FF/808080?Text=Badminton'),
-    Venue(id: 'v2', name: 'Green Park Turf', imageUrl: 'https://dummyimage.com/150/FF0000/FFFFFF?Text=Turf'),
-    Venue(id: 'v3', name: 'City Sports Complex', imageUrl: 'https://dummyimage.com/150/00FF00/000000?Text=Complex'),
-  ];
+  WebSocketChannel? _channel;
+  Function(Map<String, dynamic>)? onSlotStatusChanged;
 
-  // In-memory "database"
-  final Map<String, Slot> _slotsDb = {};
-  final Map<String, Booking> _bookingsDb = {};
-
-  MockApiService() {
-    _seedSlots();
-  }
-
-  void _seedSlots() {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-
-    for (var venue in _venues) {
-      for (int dayOffset = 0; dayOffset < 7; dayOffset++) {
-        final date = today.add(Duration(days: dayOffset));
-        for (int hour = 6; hour < 22; hour++) {
-          final start = DateTime(date.year, date.month, date.day, hour);
-          final end = start.add(Duration(hours: 1));
-          final slotId = '${venue.id}_${start.millisecondsSinceEpoch}';
-          _slotsDb[slotId] = Slot(
-            id: slotId,
-            venueId: venue.id,
-            startTime: start,
-            endTime: end,
-            isBooked: false,
-          );
-        }
-      }
+  void connectWebSocket() {
+    try {
+      _channel = WebSocketChannel.connect(Uri.parse(wsUrl));
+      _channel!.stream.listen(
+        (message) {
+          final data = jsonDecode(message);
+          if (data['event'] == 'slot_status_changed' && onSlotStatusChanged != null) {
+            onSlotStatusChanged!(data['data']);
+          }
+        },
+        onError: (error) => print('WebSocket Error: $error'),
+        onDone: () => print('WebSocket Closed'),
+      );
+    } catch (e) {
+      print('WebSocket connection failed: $e');
     }
   }
 
+  void disconnectWebSocket() {
+    _channel?.sink.close();
+  }
+
   Future<List<User>> getUsers() async {
-    await Future.delayed(Duration(milliseconds: 500));
     return _users;
   }
 
   Future<List<Venue>> getVenues() async {
-    await Future.delayed(Duration(milliseconds: 500));
-    return _venues;
+    try {
+      final response = await http.get(Uri.parse('$baseUrl/venues'));
+      if (response.statusCode == 200) {
+        final List data = jsonDecode(response.body);
+        return data.map((v) => Venue.fromJson(v)).toList();
+      } else {
+        throw ApiException('Failed to load venues');
+      }
+    } catch (e) {
+      // Return empty list if backend is not running yet
+      return [];
+    }
   }
 
-  Future<List<Slot>> getSlots(String venueId, DateTime date) async {
-    await Future.delayed(Duration(milliseconds: 500));
-    final targetDate = DateTime(date.year, date.month, date.day);
-    return _slotsDb.values.where((s) {
-      final slotDate = DateTime(s.startTime.year, s.startTime.month, s.startTime.day);
-      return s.venueId == venueId && slotDate == targetDate;
-    }).toList();
+  Future<List<Slot>> getSlots(int venueId, String date) async {
+    try {
+      final response = await http.get(Uri.parse('$baseUrl/venues/$venueId/slots?date=$date'));
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final List slots = data['slots'];
+        return slots.map((s) => Slot.fromJson(s)).toList();
+      } else {
+        throw ApiException('Failed to load slots');
+      }
+    } catch (e) {
+      return [];
+    }
   }
 
-  Future<Booking> bookSlot(String userId, String slotId) async {
-    await Future.delayed(Duration(milliseconds: 800));
-
-    // Simulate concurrency issue randomly (20% chance)
-    if (Random().nextDouble() < 0.2) {
-      throw ApiException('Slot was just taken by someone else!');
-    }
-
-    final slot = _slotsDb[slotId];
-    if (slot == null) {
-      throw ApiException('Slot not found');
-    }
-    
-    if (slot.isBooked) {
-      throw ApiException('Slot is already booked');
-    }
-
-    _slotsDb[slotId] = slot.copyWith(isBooked: true);
-    final venue = _venues.firstWhere((v) => v.id == slot.venueId);
-
-    final bookingId = 'b_${DateTime.now().millisecondsSinceEpoch}';
-    final booking = Booking(
-      id: bookingId,
-      userId: userId,
-      slot: _slotsDb[slotId]!,
-      venue: venue,
+  Future<Booking> bookSlot(String userId, int venueId, String date, String startTime) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/bookings'),
+      headers: {
+        'Content-Type': 'application/json',
+        'X-User-Id': userId,
+      },
+      body: jsonEncode({
+        'venue_id': venueId,
+        'date': date,
+        'start_time': startTime,
+      }),
     );
 
-    _bookingsDb[bookingId] = booking;
-    return booking;
+    if (response.statusCode == 201) {
+      final data = jsonDecode(response.body);
+      return Booking.fromJson(data['booking']);
+    } else if (response.statusCode == 409) {
+      final data = jsonDecode(response.body);
+      throw ApiException(data['message'] ?? 'Slot already taken');
+    } else {
+      throw ApiException('Failed to book slot');
+    }
   }
 
   Future<List<Booking>> getUserBookings(String userId) async {
-    await Future.delayed(Duration(milliseconds: 500));
-    return _bookingsDb.values.where((b) => b.userId == userId).toList();
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/users/$userId/bookings'),
+        headers: {'X-User-Id': userId},
+      );
+      if (response.statusCode == 200) {
+        final List data = jsonDecode(response.body);
+        return data.map((b) => Booking.fromJson(b)).toList();
+      } else {
+        throw ApiException('Failed to load bookings');
+      }
+    } catch (e) {
+      return [];
+    }
   }
 
-  Future<void> cancelBooking(String bookingId) async {
-    await Future.delayed(Duration(milliseconds: 500));
-    final booking = _bookingsDb[bookingId];
-    if (booking != null) {
-      final slot = _slotsDb[booking.slot.id];
-      if (slot != null) {
-         _slotsDb[slot.id] = slot.copyWith(isBooked: false);
-      }
-      _bookingsDb.remove(bookingId);
+  Future<void> cancelBooking(String userId, String bookingId) async {
+    final response = await http.delete(
+      Uri.parse('$baseUrl/bookings/$bookingId'),
+      headers: {'X-User-Id': userId},
+    );
+    if (response.statusCode != 200) {
+      throw ApiException('Failed to cancel booking');
     }
   }
 }

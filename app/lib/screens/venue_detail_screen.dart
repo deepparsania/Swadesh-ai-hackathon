@@ -8,10 +8,10 @@ import '../providers/user_provider.dart';
 
 class VenueDetailScreen extends StatefulWidget {
   final Venue venue;
-  const VenueDetailScreen({Key? key, required this.venue}) : super(key: key);
+  const VenueDetailScreen({super.key, required this.venue});
 
   @override
-  _VenueDetailScreenState createState() => _VenueDetailScreenState();
+  State<VenueDetailScreen> createState() => _VenueDetailScreenState();
 }
 
 class _VenueDetailScreenState extends State<VenueDetailScreen> {
@@ -44,20 +44,24 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
 
       await bookingProvider.bookSlot(
         userProvider.currentUser!.id,
-        slot.id,
         widget.venue.id,
         _selectedDate,
+        slot.startTime,
       );
 
-      Navigator.pop(context);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Slot booked successfully!'), backgroundColor: Colors.green),
-      );
+      if (mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Slot booked successfully!'), backgroundColor: Colors.green),
+        );
+      }
     } catch (e) {
-      Navigator.pop(context);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString()), backgroundColor: Colors.red),
-      );
+      if (mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString()), backgroundColor: Colors.red),
+        );
+      }
     }
   }
 
@@ -66,7 +70,7 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Confirm Booking'),
-        content: Text('Book slot at ${DateFormat.jm().format(slot.startTime)}?'),
+        content: Text('Book slot at ${slot.startTime}?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -145,13 +149,14 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
                   itemCount: bookingProvider.slots.length,
                   itemBuilder: (context, index) {
                     final slot = bookingProvider.slots[index];
+                    final isBooked = slot.status == 'booked';
                     return ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: slot.isBooked ? Colors.grey : Colors.green,
+                        backgroundColor: isBooked ? Colors.grey : Colors.green,
                       ),
-                      onPressed: slot.isBooked ? null : () => _confirmBooking(slot),
+                      onPressed: isBooked ? null : () => _confirmBooking(slot),
                       child: Text(
-                        DateFormat.jm().format(slot.startTime),
+                        slot.startTime,
                         style: const TextStyle(color: Colors.white),
                       ),
                     );

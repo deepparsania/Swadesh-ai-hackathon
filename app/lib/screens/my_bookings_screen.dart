@@ -1,14 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:intl/intl.dart';
 import '../providers/booking_provider.dart';
 import '../providers/user_provider.dart';
 
 class MyBookingsScreen extends StatefulWidget {
-  const MyBookingsScreen({Key? key}) : super(key: key);
+  const MyBookingsScreen({super.key});
 
   @override
-  _MyBookingsScreenState createState() => _MyBookingsScreenState();
+  State<MyBookingsScreen> createState() => _MyBookingsScreenState();
 }
 
 class _MyBookingsScreenState extends State<MyBookingsScreen> {
@@ -34,7 +33,9 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> {
     
     await Provider.of<BookingProvider>(context, listen: false).cancelBooking(userId, bookingId);
     
-    Navigator.pop(context);
+    if (mounted) {
+      Navigator.pop(context);
+    }
   }
 
   @override
@@ -55,9 +56,9 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> {
               final booking = bookingProvider.myBookings[index];
               return Card(
                 child: ListTile(
-                  title: Text(booking.venue.name),
+                  title: Text(booking.venue?.name ?? 'Venue ${booking.venueId}'),
                   subtitle: Text(
-                    '${DateFormat.yMMMd().format(booking.slot.startTime)} at ${DateFormat.jm().format(booking.slot.startTime)}',
+                    '${booking.date} at ${booking.startTime}',
                   ),
                   trailing: IconButton(
                     icon: const Icon(Icons.cancel, color: Colors.red),

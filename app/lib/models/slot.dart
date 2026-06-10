@@ -1,25 +1,35 @@
 class Slot {
-  final String id;
-  final String venueId;
-  final DateTime startTime;
-  final DateTime endTime;
-  final bool isBooked;
+  final String startTime;
+  final String endTime;
+  final String status;
+  final String? bookingId;
+  final String? userId;
 
   Slot({
-    required this.id,
-    required this.venueId,
     required this.startTime,
     required this.endTime,
-    required this.isBooked,
+    required this.status,
+    this.bookingId,
+    this.userId,
   });
 
-  Slot copyWith({bool? isBooked}) {
+  factory Slot.fromJson(Map<String, dynamic> json) {
     return Slot(
-      id: id,
-      venueId: venueId,
-      startTime: startTime,
-      endTime: endTime,
-      isBooked: isBooked ?? this.isBooked,
+      startTime: json['start_time'],
+      endTime: json['end_time'],
+      status: json['status'],
+      bookingId: json['booking_id'],
+      userId: json['user_id'],
+    );
+  }
+
+  Slot copyWith({String? status, String? bookingId, String? userId}) {
+    return Slot(
+      startTime: this.startTime,
+      endTime: this.endTime,
+      status: status ?? this.status,
+      bookingId: bookingId ?? this.bookingId,
+      userId: userId ?? this.userId,
     );
   }
 }
