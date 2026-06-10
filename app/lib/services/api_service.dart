@@ -20,9 +20,9 @@ class MockApiService {
   ];
 
   final List<Venue> _venues = [
-    Venue(id: 'v1', name: 'Downtown Badminton', imageUrl: 'https://via.placeholder.com/150/0000FF/808080?Text=Badminton'),
-    Venue(id: 'v2', name: 'Green Park Turf', imageUrl: 'https://via.placeholder.com/150/FF0000/FFFFFF?Text=Turf'),
-    Venue(id: 'v3', name: 'City Sports Complex', imageUrl: 'https://via.placeholder.com/150/00FF00/000000?Text=Complex'),
+    Venue(id: 'v1', name: 'Downtown Badminton', imageUrl: 'https://dummyimage.com/150/0000FF/808080?Text=Badminton'),
+    Venue(id: 'v2', name: 'Green Park Turf', imageUrl: 'https://dummyimage.com/150/FF0000/FFFFFF?Text=Turf'),
+    Venue(id: 'v3', name: 'City Sports Complex', imageUrl: 'https://dummyimage.com/150/00FF00/000000?Text=Complex'),
   ];
 
   // In-memory "database"
