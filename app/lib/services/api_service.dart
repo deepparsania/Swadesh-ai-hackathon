@@ -15,8 +15,8 @@ class ApiException implements Exception {
 }
 
 class ApiService {
-  static const String baseUrl = 'http://localhost:3000';
-  static const String wsUrl = 'ws://localhost:3000';
+  static const String baseUrl = 'http://192.168.106.208:3000';
+  static const String wsUrl = 'ws://192.168.106.208:3000';
 
   final List<User> _users = [
     User(id: 'user_1', name: 'User 1'),
@@ -120,11 +120,13 @@ class ApiService {
       );
       if (response.statusCode == 200) {
         final List data = jsonDecode(response.body);
+        print(data);
         return data.map((b) => Booking.fromJson(b)).toList();
       } else {
         throw ApiException('Failed to load bookings');
       }
     } catch (e) {
+      debugPrint(e.toString());
       return [];
     }
   }

@@ -2,7 +2,7 @@ import 'venue.dart';
 
 class Booking {
   final String id;
-  final int venueId;
+  final int? venueId;
   final String date;
   final String startTime;
   final String userId;

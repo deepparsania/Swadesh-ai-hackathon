@@ -26,7 +26,7 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
   void _fetchSlotsForDate(DateTime date) {
     Future.microtask(() =>
         Provider.of<BookingProvider>(context, listen: false)
-            .fetchSlots(widget.venue.id, date));
+            .fetchSlots(widget.venue.id??0, date));
   }
 
   void _bookSlot(Slot slot) async {
@@ -44,7 +44,7 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
 
       await bookingProvider.bookSlot(
         userProvider.currentUser!.id,
-        widget.venue.id,
+        widget.venue!.id??0,
         _selectedDate,
         slot.startTime,
       );
