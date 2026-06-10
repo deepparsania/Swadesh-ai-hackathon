@@ -1,0 +1,1 @@
+# Swadesh-ai-hackathon
